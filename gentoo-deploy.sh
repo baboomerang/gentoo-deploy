@@ -32,6 +32,30 @@ MAKEINPUTDEVICES='evdev'
 MAKEVIDEOCARDS='intel i965'
 MAKELINGUAS='en_US en'
 
+unmount_disk() {
+    # Get all mounted partitions other than swap
+    mounts=$(lsblk -i -o kname,fstype,mountpoint --noheadings $1 |
+             awk 'NF==3 && ($2 != "swap") {print $1,$2,$3}' |
+             sort -r -k 3
+    )
+
+    # Get swap partitions
+    swap_mounts=$(lsblk -i -o kname,fstype --noheadings $1 |
+                  awk '$2 == "swap" {print $1}'
+    )
+
+    # Unmount partitions
+    IFS=$'\n'
+    for mounted_part in $mounts; do
+        umount /dev/$(awk '{print $1}' <<< $mounted_part)
+    done
+
+    # Disable any swap partitions
+    for swap_mount in $swap_mounts; do
+        swapoff /dev/$(awk '{print $1}' <<< $swap_mount)
+    done
+}
+
 install() {
     #######################################################
     #  Prepare the disks for the MBR Gentoo Install
@@ -53,6 +77,8 @@ install() {
         printf "PRESS CTRL+C TO CANCEL (%2d seconds)\r" ${seconds}
         sleep 1
     done
+
+    unmount_disk $disk
 
     # Create new partitions and setup for an MBR install
     parted --script "$disk" \
@@ -115,7 +141,7 @@ install() {
     #      then extract archive to $ROOT_DIR
 
     cd "$ROOT_DIR" || exit
-    
+
     # If STAGE3 does not exist, get from tftp server
     if [ ! -f "$STAGE3" ]; then
         echo "$STAGE3 not in directory, downloading from local tftp..."
@@ -205,13 +231,13 @@ install() {
     echo "LINGUAS=\"$MAKELINGUAS\"" >> ."$MAKECONF"
 
     # Select Mirrors
-    mirrorselect -s10 -o >> ."$MAKECONF" 
+    mirrorselect -s10 -o >> ."$MAKECONF"
 
     # Copy DNS info before chrooting
     cp -L /etc/resolv.conf ./etc/
     # Copy itself into the chroot directory before chrooting
     cp -L -u "$SCRIPT" ./root/gentoo-deploy.sh
-    
+
     # Mount important partitions before chrooting
     mount -t proc proc ./proc
     mount --rbind /sys ./sys
