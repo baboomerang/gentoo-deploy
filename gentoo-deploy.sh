@@ -46,7 +46,7 @@ unmount_disk() {
     # Unmount partitions
     IFS=$'\n'
     for mounted_part in $mounts; do
-        umount /dev/$(awk '{print $1}' <<< $mounted)
+        umount /dev/$(awk '{print $1}' <<< $mounted_part)
     done
 
     # Disable any swap partitions
