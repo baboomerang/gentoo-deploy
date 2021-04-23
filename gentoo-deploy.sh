@@ -50,7 +50,7 @@ install() {
 
     # Print countdown and wait 60 seconds before erasing disk
     for seconds in {60..1}; do
-	    printf "PRESS CTRL+C TO CANCEL (%2d seconds)\r" ${seconds}
+        printf "PRESS CTRL+C TO CANCEL (%2d seconds)\r" ${seconds}
         sleep 1
     done
 
@@ -248,9 +248,9 @@ chroot_install() {
     locale-gen
 
     env-update && source /etc/profile
-    
+
     # Create fstab
-    
+
 
     # Install Kernel Sources
     emerge --ask=y sys-kernel/gentoo-sources
