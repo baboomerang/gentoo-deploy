@@ -47,12 +47,12 @@ unmount_disk() {
     # Unmount partitions
     IFS=$'\n'
     for mounted_part in $mounts; do
-        umount /dev/$(awk '{print $1}' <<< $mounted_part)
+        umount -l /dev/$(awk '{print $1}' <<< "$mounted_part")
     done
 
     # Disable any swap partitions
     for swap_mount in $swap_mounts; do
-        swapoff /dev/$(awk '{print $1}' <<< $swap_mount)
+        swapoff /dev/$(awk '{print $1}' <<< "$swap_mount")
     done
 }
 
@@ -260,7 +260,7 @@ chroot_install() {
     # Choose the portage profile
     eselect profile list
     local profile_num=1
-    read -rp "Which profile?:" profile_num
+    read -rp "Which profile?: " profile_num
     eselect profile set "$profile_num"
 
     # Update the @world set
@@ -288,7 +288,7 @@ chroot_install() {
 
     # Set the hostname for the machine
     local hostname
-    read -rp "Enter desired hostname for this machine" hostname
+    read -rp "Enter desired hostname for this machine: " hostname
     echo "hostname=$hostname" >> /etc/conf.d/hostname
 
     # Install a few helpful packages
@@ -306,13 +306,13 @@ chroot_install() {
     grub-install "$disk"
 
     # Change root password and create a user account
-    echo "Set the password for the root account:"
+    echo "Set the password for the root account: "
     passwd
 
     local username
-    read -rp "Set a user account" username
+    read -rp "New account username: " username
     useradd -m -G users, wheel, audio, disk "$username"
-    echo "Set the password for ${username} account"
+    echo "Set the password for ${username} account: "
     passwd "${username}"
 
     rm stage3-*.tar*
