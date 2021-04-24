@@ -112,7 +112,7 @@ install() {
     #      root must be mounted first
     #      then either /boot or /home
 
-    if [[ ! $(mount "$root_dev" "$ROOT_DIR" >&2) && ! $(findmnt -M "$ROOT_DIR" >&2) ]]; then
+    if [[ $(mount "$root_dev" "$ROOT_DIR" >&2) && $(findmnt -M "$ROOT_DIR" >&2) ]]; then
         echo "Error! Cannot mount $root_dev to $ROOT_DIR..." >&2
         exit 1
     fi
@@ -120,12 +120,12 @@ install() {
     mkdir "$BOOT_DIR"
     mkdir "$HOME_DIR"
 
-    if [[ ! $(mount "$boot_dev" "$BOOT_DIR" >&2) && ! $(findmnt -M "$BOOT_DIR" >&2) ]]; then
+    if [[ $(mount "$boot_dev" "$BOOT_DIR" >&2) && $(findmnt -M "$BOOT_DIR" >&2) ]]; then
         echo "Error! Cannot mount $boot_dev to $BOOT_DIR..." >&2
         exit 1
     fi
 
-    if [[ ! $(mount "$home_dev" "$HOME_DIR" >&2) && ! $(findmnt -M "$HOME_DIR" >&2) ]]; then
+    if [[ $(mount "$home_dev" "$HOME_DIR" >&2) && $(findmnt -M "$HOME_DIR" >&2) ]]; then
         echo "Error! Cannot mount $home_dev to $HOME_DIR..." >&2
         exit 1
     fi
@@ -175,51 +175,51 @@ install() {
 
     # Configure the MAKEUSE Variable
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o mmx)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE mmx"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o mmxext)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE mmxext"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE sse"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse2)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE sse2"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse3)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE sse3"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o pni)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE ssse3"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse4_1)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE sse4_1"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse4_2)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE sse4_2"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o avx)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE avx"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o avx2)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE avx2"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o aes)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE aes"
     fi
     MATCH=$(cat /proc/cpuinfo | grep -m 1 -o fma3)
-    if [ ! -z "$MATCH" ]; then
+    if [ -n "$MATCH" ]; then
         MAKEUSE="$MAKEUSE fma3"
     fi
 
