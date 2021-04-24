@@ -144,13 +144,13 @@ install() {
 
     # If STAGE3 does not exist, get from tftp server
     if [ ! -f "$STAGE3" ]; then
-        echo "$STAGE3 not in directory, downloading from local tftp..."
+        echo "Warning! $STAGE3 not in directory, downloading from local tftp..."
         curl -o "$STAGE3" tftp://"$TFTP"/gentoo-deploy/"$FOLDER"/"$STAGE3" >&2
     fi
 
     # If STAGE3 does not exist, get from the internet
     if [ ! -f "$STAGE3" ]; then
-        echo "$STAGE3 not in directory, downloading from mirror..."
+        echo "Warning! $STAGE3 not in directory, downloading from mirror..."
         wget -N "$LOCATION"/"$FOLDER"/"$STAGE3" >&2
     fi
 
