@@ -8,10 +8,11 @@
 ################################
 
 SCRIPT=`realpath $0`
+PACKAGE_LIST=`realpath packages.txt`
 ROOT_DIR="/mnt/gentoo"
 BOOT_DIR="${ROOT_DIR}/boot"
 HOME_DIR="${ROOT_DIR}/home"
-DISK="/dev/sdx"
+DISK="/dev/sdX"
 
 TFTP=192.168.0.3
 MIRROR="https://bouncer.gentoo.org/fetch/root/all/"
@@ -243,7 +244,7 @@ install() {
     # Copy itself into the chroot directory before chrooting
     cp -L -u "$SCRIPT" ./root/gentoo-deploy.sh
     # Copy package list to chroot directory before chrooting
-    cp -L ./packages.txt ./root/packages.txt
+    cp -L "$PACKAGE_LIST" ./root/packages.txt
 
     # Mount important partitions before chrooting
     mount -t proc proc ./proc
@@ -274,9 +275,9 @@ chroot_install() {
     local profile_num=1
     read -rp "Which profile?: " profile_num
     eselect profile set "$profile_num"
-
+ 
     # Update the @world set
-    emerge --ask=n --verbose --update --deep --newuse @world
+    emerge --ask=n --autounmask=y --verbose --update --deep --newuse @world
 
     # Set timezone
     echo "America/Chicago" > /etc/timezone
@@ -285,26 +286,28 @@ chroot_install() {
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
     locale-gen
 
+    # Automatically update package config
+    etc-update --automode -3; echo "y"
     env-update && source /etc/profile
 
     # Create fstab
 
-    # Install Kernel Sources
-    emerge --ask=n sys-kernel/gentoo-sources
-    emerge --ask=n sys-kernel/genkernel
-    genkernel all
-
     # Install firmware for special hardware
-    emerge --ask=n sys-kernel/linux-firmware
+    emerge --ask=n --autounmask=y sys-kernel/linux-firmware
+
+    # Install Kernel Sources
+    emerge --ask=n --autounmask-write sys-kernel/gentoo-sources
+    emerge --ask=n --autounmask-write sys-kernel/genkernel
+    genkernel all
 
     # Set the hostname for the machine
     local hostname
     read -rp "Enter desired hostname for this machine: " hostname
     echo "hostname=$hostname" >> /etc/conf.d/hostname
 
-    # Install a few helpful packages
+    # Install a few helpful packages and services
     local packages
-    packages=$(sed -e 's/#.*$//' -e '/^$/d' packages.txt | tr '\n' ' ')
+    packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
     emerge --ask=n --autounmask-continue -q $packages
 
     # Enable some services to the default runlevel
@@ -312,7 +315,7 @@ chroot_install() {
     rc-update add sysklogd default
 
     # Install the bootloader
-    emerge --ask=n --quiet-build=y sys-boot/grub:2
+    emerge --ask=n --autounmask-continue -q sys-boot/grub:2
     grub-install "$DISK"
 
     # Change root password
@@ -332,6 +335,7 @@ chroot_install() {
     do true; done
 
     rm stage3-*.tar*
+    rm /root/packages.txt
 }
 
 main() {
