@@ -11,12 +11,13 @@ SCRIPT=`realpath $0`
 ROOT_DIR="/mnt/gentoo"
 BOOT_DIR="${ROOT_DIR}/boot"
 HOME_DIR="${ROOT_DIR}/home"
+DISK="/dev/sdx"
 
 TFTP=192.168.0.3
-MIRROR="http://distfiles.gentoo.org"
+MIRROR="https://bouncer.gentoo.org/fetch/root/all/"
 ARCH="amd64"
 PLATFORM="amd64"
-LOCATION="$MIRROR/releases/$ARCH/autobuilds"
+LOCATION="$MIRROR/releases/$ARCH/autobuilds/current-stage3-${ARCH}/"
 FOLDER="20210321"
 STAGE3="stage3-$ARCH-$FOLDER.tar.xz"
 
@@ -26,8 +27,8 @@ PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
 MAKEOPTS="-j$(expr `nproc` + 1)"
-MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom pam policykit X dhcpcd logrotate python3_7 python3_9'
-MAKEPYTHON='python2_7 python3_3'
+MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd logrotate python3_7'
+MAKEPYTHON='python2_7 python3_7'
 MAKEINPUTDEVICES='evdev'
 MAKEVIDEOCARDS='intel i965'
 MAKELINGUAS='en_US en'
@@ -65,23 +66,23 @@ install() {
     # Show all disks for the user
     lsblk
 
-    # Prompt user for input and save the input
-    local disk
+    DISK="/dev/sdX"
 
-    read -rp "Which disk should be erased? (i.e. /dev/sdj): " disk
-    echo "WARNING! BLOCK DEVICE: $disk WILL BE ERASED IN 60 SECONDS..."
+    # Prompt user for input and save the input
+    read -rp "Which disk should be erased? (i.e. /dev/sdj): " DISK
+    echo "WARNING! BLOCK DEVICE: $DISK WILL BE ERASED IN 60 SECONDS..."
     echo "PLEASE MAKE SURE THIS IS THE CORRECT DISK"
 
     # Print countdown and wait 60 seconds before erasing disk
-    for seconds in {60..1}; do
+    for seconds in {5..1}; do
         printf "PRESS CTRL+C TO CANCEL (%2d seconds)\r" ${seconds}
         sleep 1
     done
 
-    unmount_disk $disk
+    unmount_disk "$DISK"
 
     # Create new partitions and setup for an MBR install
-    parted --script "$disk" \
+    parted --script $DISK \
         mklabel msdos \
         mkpart primary ext2 0% 1GiB \
         set 1 boot on \
@@ -96,10 +97,10 @@ install() {
     fi
 
     # Make local names for disk partitions
-    local boot_dev=${disk}1
-    local swap_dev=${disk}2
-    local root_dev=${disk}3
-    local home_dev=${disk}4
+    local boot_dev=${DISK}1
+    local swap_dev=${DISK}2
+    local root_dev=${DISK}3
+    local home_dev=${DISK}4
 
     # Create the filesystems
     mkfs.ext4 -F "$boot_dev"
@@ -145,13 +146,15 @@ install() {
     # If STAGE3 does not exist, get from tftp server
     if [ ! -f "$STAGE3" ]; then
         echo "Warning! $STAGE3 not in directory, downloading from local tftp..."
-        curl -o "$STAGE3" tftp://"$TFTP"/gentoo-deploy/"$FOLDER"/"$STAGE3" >&2
+        curl --connect-timeout 30 --speed-time 15 --speed-limit 500 -o "$STAGE3" tftp://"$TFTP"/gentoo-deploy/"$FOLDER"/"$STAGE3" >&2
     fi
 
     # If STAGE3 does not exist, get from the internet
     if [ ! -f "$STAGE3" ]; then
         echo "Warning! $STAGE3 not in directory, downloading from mirror..."
-        wget -N "$LOCATION"/"$FOLDER"/"$STAGE3" >&2
+        wget -l1 -np "${LOCATION}" -P ./ -A index.html -O index.tmp >&2
+        STAGE3=$(grep -m1 -Eo ">stage3-${ARCH}-[0-9]*.*.tar.xz" index.tmp | cut -c 2-)
+        wget -N "${LOCATION}/${STAGE3}"
     fi
 
     # Extract STAGE3 to $ROOT_DIR directory
@@ -167,64 +170,66 @@ install() {
 
     # Define CFLAGS and CXXFLAGS
     if [ -n "$MAKECFLAGS" ]; then
-        sed -i "s/COMMON_FLAGS=.*/c\COMMON_FLAGS=\"$MAKECFLAGS\"/" "$MAKECONF"
+        sed -i "s/COMMON_FLAGS=.*/COMMON_FLAGS=\"$MAKECFLAGS\"/" "$MAKECONF"
     fi
 
     # Append MAKEOPTS to the make.conf file
     echo "MAKEOPTS=\"$MAKEOPTS\"" >> "$MAKECONF"
 
     # Configure the MAKEUSE Variable
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o mmx)
-    if [ -n "$MATCH" ]; then
+    local match
+    match=$(cat /proc/cpuinfo | grep -m 1 -o mmx)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE mmx"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o mmxext)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o mmxext)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE mmxext"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o sse)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE sse"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse2)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o sse2)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE sse2"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse3)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o sse3)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE sse3"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o pni)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o pni)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE ssse3"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse4_1)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o sse4_1)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE sse4_1"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o sse4_2)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o sse4_2)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE sse4_2"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o avx)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o avx)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE avx"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o avx2)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o avx2)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE avx2"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o aes)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o aes)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE aes"
     fi
-    MATCH=$(cat /proc/cpuinfo | grep -m 1 -o fma3)
-    if [ -n "$MATCH" ]; then
+    match=$(cat /proc/cpuinfo | grep -m 1 -o fma3)
+    if [ -n "$match" ]; then
         MAKEUSE="$MAKEUSE fma3"
     fi
 
     # Append the make.conf file with more make vars
-    sed -i "s/USE=.*/c\USE=\"$MAKEUSE\"/" "$MAKECONF"
+    #sed -i "s/USE=.*/c\USE=\"$MAKEUSE\"/" "$MAKECONF"
+    echo "USE=\"$MAKEUSE\"" >> ."$MAKECONF"
     echo "PYTHON_TARGETS=\"$MAKEPYTHON\"" >> ."$MAKECONF"
     echo "INPUT_DEVICES=\"$MAKEINPUTDEVICES\"" >> ."$MAKECONF"
     echo "VIDEO_CARDS=\"$MAKEVIDEOCARDS\"" >> ."$MAKECONF"
@@ -237,6 +242,8 @@ install() {
     cp -L /etc/resolv.conf ./etc/
     # Copy itself into the chroot directory before chrooting
     cp -L -u "$SCRIPT" ./root/gentoo-deploy.sh
+    # Copy package list to chroot directory before chrooting
+    cp -L ./packages.txt ./root/packages.txt
 
     # Mount important partitions before chrooting
     mount -t proc proc ./proc
@@ -252,10 +259,15 @@ chroot_install() {
     # Show visual (chroot) on shell prompt
     export PS1="(chroot) ${PS1}"
 
+    #######################################################
+    #  Setup the Portage Build system
+    #      define a system profile
+    #      emerge all packages required by global use flags
+
+    # Update the Gentoo ebuild repository to the latest
     mkdir -p "$PACKAGEKEYWORDS"
     emerge-webrsync
     emerge --sync
-    emerge --oneshot portage
 
     # Choose the portage profile
     eselect profile list
@@ -264,7 +276,7 @@ chroot_install() {
     eselect profile set "$profile_num"
 
     # Update the @world set
-    emerge --ask=y --verbose --update --deep --newuse @world
+    emerge --ask=n --verbose --update --deep --newuse @world
 
     # Set timezone
     echo "America/Chicago" > /etc/timezone
@@ -277,14 +289,13 @@ chroot_install() {
 
     # Create fstab
 
-
     # Install Kernel Sources
-    emerge --ask=y sys-kernel/gentoo-sources
-    emerge --ask=y sys-kernel/genkernel
+    emerge --ask=n sys-kernel/gentoo-sources
+    emerge --ask=n sys-kernel/genkernel
     genkernel all
 
     # Install firmware for special hardware
-    emerge --ask=y sys-kernel/linux-firmware
+    emerge --ask=n sys-kernel/linux-firmware
 
     # Set the hostname for the machine
     local hostname
@@ -292,28 +303,33 @@ chroot_install() {
     echo "hostname=$hostname" >> /etc/conf.d/hostname
 
     # Install a few helpful packages
-    emerge --ask=y net-misc/networkmanager
-    rc-update add NetworkManager default
+    local packages
+    packages=$(sed -e 's/#.*$//' -e '/^$/d' packages.txt | tr '\n' ' ')
+    emerge --ask=n --autounmask-continue -q $packages
 
-    emerge --ask=y app-admin/sysklogd
+    # Enable some services to the default runlevel
+    rc-update add NetworkManager default
     rc-update add sysklogd default
 
-    emerge --ask=y sys-apps/mlocate
-    emerge --ask=y net-wireless/wpa_supplicant
-
     # Install the bootloader
-    emerge --ask=y sys-boot/grub:2
-    grub-install "$disk"
+    emerge --ask=n --quiet-build=y sys-boot/grub:2
+    grub-install "$DISK"
 
-    # Change root password and create a user account
+    # Change root password
     echo "Set the password for the root account: "
-    passwd
+    while [ passwd ];
+    do true; done
 
+    # Create new user account
     local username
     read -rp "New account username: " username
-    useradd -m -G users, wheel, audio, disk "$username"
+    while [ useradd -m -G users, wheel, audio, disk "$username" ];
+    do true; done
+
+    # Set password for user account
     echo "Set the password for ${username} account: "
-    passwd "${username}"
+    while [ passwd "$username" ];
+    do true; done
 
     rm stage3-*.tar*
 }
@@ -331,9 +347,9 @@ main() {
 
     # Check for commandline parameter
     if [ "$1" = "install" ]; then
-        install
+        install || exit
     elif [ "$1" = "chroot" ]; then
-        chroot_install
+        chroot_install || exit
     else
         echo "Could not understand $1"
         echo "To start installation, please run $SCRIPT install"
