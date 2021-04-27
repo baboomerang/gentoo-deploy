@@ -14,7 +14,7 @@ BOOT_DIR="${ROOT_DIR}/boot"
 HOME_DIR="${ROOT_DIR}/home"
 DISK="/dev/sdX"
 
-TFTP=192.168.0.3
+TFTP="192.168.0.3"
 MIRROR="https://bouncer.gentoo.org/fetch/root/all/"
 ARCH="amd64"
 PLATFORM="amd64"
@@ -28,8 +28,8 @@ PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
 MAKEOPTS="-j$(expr `nproc` + 1)"
-MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd logrotate python3_7'
-MAKEPYTHON='python2_7 python3_7'
+MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd logrotate'
+MAKEPYTHON='python3_8'
 MAKEINPUTDEVICES='evdev'
 MAKEVIDEOCARDS='intel i965'
 MAKELINGUAS='en_US en'
@@ -171,70 +171,16 @@ install() {
 
     # Define CFLAGS and CXXFLAGS
     if [ -n "$MAKECFLAGS" ]; then
-        sed -i "s/COMMON_FLAGS=.*/COMMON_FLAGS=\"$MAKECFLAGS\"/" "$MAKECONF"
+        sed -i "s/COMMON_FLAGS=.*/COMMON_FLAGS=\"$MAKECFLAGS\"/" ".$MAKECONF"
     fi
 
-    # Append MAKEOPTS to the make.conf file
-    echo "MAKEOPTS=\"$MAKEOPTS\"" >> "$MAKECONF"
-
-    # Configure the MAKEUSE Variable
-    local match
-    match=$(cat /proc/cpuinfo | grep -m 1 -o mmx)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE mmx"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o mmxext)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE mmxext"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o sse)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE sse"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o sse2)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE sse2"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o sse3)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE sse3"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o pni)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE ssse3"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o sse4_1)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE sse4_1"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o sse4_2)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE sse4_2"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o avx)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE avx"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o avx2)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE avx2"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o aes)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE aes"
-    fi
-    match=$(cat /proc/cpuinfo | grep -m 1 -o fma3)
-    if [ -n "$match" ]; then
-        MAKEUSE="$MAKEUSE fma3"
-    fi
-
-    # Append the make.conf file with more make vars
-    #sed -i "s/USE=.*/c\USE=\"$MAKEUSE\"/" "$MAKECONF"
-    echo "USE=\"$MAKEUSE\"" >> ."$MAKECONF"
-    echo "PYTHON_TARGETS=\"$MAKEPYTHON\"" >> ."$MAKECONF"
-    echo "INPUT_DEVICES=\"$MAKEINPUTDEVICES\"" >> ."$MAKECONF"
-    echo "VIDEO_CARDS=\"$MAKEVIDEOCARDS\"" >> ."$MAKECONF"
-    echo "LINGUAS=\"$MAKELINGUAS\"" >> ."$MAKECONF"
+    # Append MAKEOPTS and other make vars to make.conf
+    echo "MAKEOPTS=\"$MAKEOPTS\"" >> ".$MAKECONF"
+    echo "USE=\"$MAKEUSE\"" >> ".$MAKECONF"
+    echo "PYTHON_TARGETS=\"$MAKEPYTHON\"" >> ".$MAKECONF"
+    echo "INPUT_DEVICES=\"$MAKEINPUTDEVICES\"" >> ".$MAKECONF"
+    echo "VIDEO_CARDS=\"$MAKEVIDEOCARDS\"" >> ".$MAKECONF"
+    echo "LINGUAS=\"$MAKELINGUAS\"" >> ".$MAKECONF"
 
     # Select Mirrors
     mirrorselect -s10 -o >> ."$MAKECONF"
@@ -269,15 +215,20 @@ chroot_install() {
     mkdir -p "$PACKAGEKEYWORDS"
     emerge-webrsync
     emerge --sync
+    emerge --oneshot portage
+
+    # Detect all CPU features and set use flags in make.conf
+    emerge --oneshot --ask=n --autounmask-continue app-portage/cpuid2cpuflags
+    echo "CPU_FLAGS_X86=$(cpuid2cpuflags)" >> ".$MAKECONF"
 
     # Choose the portage profile
     eselect profile list
     local profile_num=1
     read -rp "Which profile?: " profile_num
     eselect profile set "$profile_num"
- 
+
     # Update the @world set
-    emerge --ask=n --autounmask=y --verbose --update --deep --newuse @world
+    emerge --ask=n --autounmask-continue --with-bdeps=y --verbose --update --deep --newuse @world
 
     # Set timezone
     echo "America/Chicago" > /etc/timezone
@@ -287,17 +238,16 @@ chroot_install() {
     locale-gen
 
     # Automatically update package config
-    etc-update --automode -3; echo "y"
     env-update && source /etc/profile
 
     # Create fstab
 
     # Install firmware for special hardware
-    emerge --ask=n --autounmask=y sys-kernel/linux-firmware
+    emerge --ask=n --autounmask-continue sys-kernel/linux-firmware
 
     # Install Kernel Sources
-    emerge --ask=n --autounmask-write sys-kernel/gentoo-sources
-    emerge --ask=n --autounmask-write sys-kernel/genkernel
+    emerge --ask=n --autounmask-continue sys-kernel/gentoo-sources
+    emerge --ask=n --autounmask-continue sys-kernel/genkernel
     genkernel all
 
     # Set the hostname for the machine
@@ -308,7 +258,7 @@ chroot_install() {
     # Install a few helpful packages and services
     local packages
     packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
-    emerge --ask=n --autounmask-continue -q $packages
+    emerge --ask=n --autounmask-continue $packages
 
     # Enable some services to the default runlevel
     rc-update add NetworkManager default
