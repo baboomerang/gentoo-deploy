@@ -24,6 +24,7 @@ STAGE3="stage3-$ARCH-$FOLDER.tar.xz"
 
 FSTAB="/etc/fstab"
 MAKECONF="/etc/portage/make.conf"
+PACKAGELICENSE="/etc/portage/package.license/kernel"
 PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
@@ -183,7 +184,7 @@ install() {
     echo "LINGUAS=\"$MAKELINGUAS\"" >> ".$MAKECONF"
 
     # Select Mirrors
-    mirrorselect -s10 -o >> ."$MAKECONF"
+    mirrorselect -s10 -o >> ".$MAKECONF"
 
     # Copy DNS info before chrooting
     cp -L /etc/resolv.conf ./etc/
@@ -227,46 +228,10 @@ chroot_install() {
     read -rp "Which profile?: " profile_num
     eselect profile set "$profile_num"
 
-    # Update the @world set
-    emerge --ask=n --autounmask-continue --with-bdeps=y --verbose --update --deep --newuse @world
-
-    # Set timezone
-    echo "America/Chicago" > /etc/timezone
-
-    # Set locales
-    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-    locale-gen
-
-    # Automatically update package config
-    env-update && source /etc/profile
-
-    # Create fstab
-
-    # Install firmware for special hardware
-    emerge --ask=n --autounmask-continue sys-kernel/linux-firmware
-
-    # Install Kernel Sources
-    emerge --ask=n --autounmask-continue sys-kernel/gentoo-sources
-    emerge --ask=n --autounmask-continue sys-kernel/genkernel
-    genkernel all
-
     # Set the hostname for the machine
     local hostname
     read -rp "Enter desired hostname for this machine: " hostname
     echo "hostname=$hostname" >> /etc/conf.d/hostname
-
-    # Install a few helpful packages and services
-    local packages
-    packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
-    emerge --ask=n --autounmask-continue $packages
-
-    # Enable some services to the default runlevel
-    rc-update add NetworkManager default
-    rc-update add sysklogd default
-
-    # Install the bootloader
-    emerge --ask=n --autounmask-continue -q sys-boot/grub:2
-    grub-install "$DISK"
 
     # Change root password
     echo "Set the password for the root account: "
@@ -283,6 +248,43 @@ chroot_install() {
     echo "Set the password for ${username} account: "
     while [ passwd "$username" ];
     do true; done
+
+    # Update the @world set
+    emerge --ask=n --autounmask-continue --with-bdeps=y --verbose --update --deep --newuse @world
+
+    # Set timezone
+    echo "America/Chicago" > /etc/timezone
+
+    # Set locales
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen
+
+    # Automatically update package config
+    env-update && source /etc/profile
+
+    # Create fstab
+
+    # Install firmware for special hardware
+    echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> "$PACKAGELICENSE"
+    emerge --ask=n --autounmask-continue sys-kernel/linux-firmware
+
+    # Install Kernel Sources
+    emerge --ask=n --autounmask-continue sys-kernel/gentoo-sources
+    emerge --ask=n --autounmask-continue sys-kernel/genkernel
+    genkernel all
+
+    # Install a few helpful packages and services
+    local packages
+    packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
+    emerge --ask=n --autounmask-continue $packages
+
+    # Enable some services to the default runlevel
+    rc-update add NetworkManager default
+    rc-update add sysklogd default
+
+    # Install the bootloader
+    emerge --ask=n --autounmask-continue -q sys-boot/grub:2
+    grub-install "$DISK"
 
     rm stage3-*.tar*
     rm /root/packages.txt
