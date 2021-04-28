@@ -41,7 +41,11 @@ net-misc/networkmanager
 net-wireless/wpa_supplicant
 
 #fonts
+media-fonts/noto
+media-fonts/noto-emoji
+media-fonts/noto-cjk
 media-fonts/fontawesome
+media-fonts/liberation-fonts
 media-fonts/libertine
 
 #libs
