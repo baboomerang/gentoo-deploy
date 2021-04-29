@@ -1,0 +1,3 @@
+[submodule "glacion-genfstab"]
+	path = glacion-genfstab
+	url = https://github.com/glacion/genfstab
