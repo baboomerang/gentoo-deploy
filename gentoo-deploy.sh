@@ -196,7 +196,7 @@ install() {
     cp -L /etc/resolv.conf ./etc/
     # Copy itself into the chroot directory before chrooting
     cp -L -u "$SCRIPT" ./root/gentoo-deploy.sh
-    cp -L -u "$GENFSTAB" ./root/genfstab.sh
+    cp -L -u "$GENFSTAB" ./root/genfstab
     # Copy package list to chroot directory before chrooting
     cp -L "$PACKAGE_LIST" ./root/packages.txt
 
@@ -227,7 +227,7 @@ chroot_install() {
 
     # Detect all CPU features and set use flags in make.conf
     emerge --oneshot --ask=n --autounmask-continue app-portage/cpuid2cpuflags
-    echo $($(cpuid2cpuflags) | cut -c 15-) >> "$MAKECONF"
+    echo "CPU_FLAGS_X86=\"$(cpuid2cpuflags | cut -c 15-)\"" >> "$MAKECONF"
 
     # Choose the portage profile
     eselect profile list
@@ -238,29 +238,13 @@ chroot_install() {
     # Set the hostname for the machine
     local hostname
     read -rp "Enter desired hostname for this machine: " hostname
-    echo "hostname=$hostname" >> /etc/conf.d/hostname
+    echo "hostname=${hostname}" >> /etc/conf.d/hostname
 
     # Change root password
     echo "Set the password for the root account"
-    while
-        local status=$(passwd)
-        [[ $status -ne 0 ]]
-    do true; done
-
-    # Create new user account
-    local username
-    read -rp "New account username: " username
-    while
-        local status=$(useradd -m -G users,wheel,disk,cdrom $username)
-        [[ $status -ne 0 ]];
-    do true; done
-
-    # Set password for user account
-    echo "Set the password for $username account"
-    while
-        local status=$(passwd $username)
-        [[ $status -ne 0 ]];
-    do true; done
+    while passwd
+        [ $? -ne 0 ]
+    do :; done
 
     # Update the @world set
     emerge --ask=n --autounmask-continue --with-bdeps=y --verbose --update --deep --newuse @world
@@ -276,7 +260,7 @@ chroot_install() {
     env-update && source /etc/profile
 
     # Create fstab
-    $("./root/genfstab.sh" -U / >> "$FSTAB")
+    $(/root/genfstab -U / >> "$FSTAB")
 
     # Install firmware for special hardware
     echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> "$PACKAGELICENSE"
@@ -302,7 +286,7 @@ chroot_install() {
 
     rm stage3-*.tar*
     rm /root/packages.txt
-    rm /root/genfstab.sh
+    rm /root/genfstab
 }
 
 main() {
