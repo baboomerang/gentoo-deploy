@@ -30,7 +30,12 @@ PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
 MAKEOPTS="-j$(expr `nproc` + 1)"
-MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd logrotate'
+MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde \
+        elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis \
+        x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash \
+        bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig \
+        truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd \
+        logrotate'
 MAKEPYTHON='python3_8'
 MAKEINPUTDEVICES='evdev'
 MAKEVIDEOCARDS='intel i965'
@@ -222,7 +227,7 @@ chroot_install() {
 
     # Detect all CPU features and set use flags in make.conf
     emerge --oneshot --ask=n --autounmask-continue app-portage/cpuid2cpuflags
-    echo "$(cpuid2cpuflags) | cut -c 15-" >> "$MAKECONF"
+    echo $($(cpuid2cpuflags) | cut -c 15-) >> "$MAKECONF"
 
     # Choose the portage profile
     eselect profile list
