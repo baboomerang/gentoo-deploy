@@ -238,7 +238,7 @@ chroot_install() {
     # Set the hostname for the machine
     local hostname
     read -rp "Enter desired hostname for this machine: " hostname
-    echo "hostname=${hostname}" >> /etc/conf.d/hostname
+    echo "hostname=\"${hostname}\"" > /etc/conf.d/hostname
 
     # Change root password
     echo "Set the password for the root account"
