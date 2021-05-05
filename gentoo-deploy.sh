@@ -77,7 +77,7 @@ install() {
 
     # Prompt user for input and save the input
     read -rp "Which disk should be erased? (i.e. /dev/sdj): " disk
-    echo "WARNING! BLOCK DEVICE: $DISK WILL BE ERASED IN 60 SECONDS..."
+    echo "WARNING! BLOCK DEVICE: $disk WILL BE ERASED IN 60 SECONDS..."
     echo "PLEASE MAKE SURE THIS IS THE CORRECT DISK"
 
     # Print countdown and wait 60 seconds before erasing disk
@@ -86,10 +86,10 @@ install() {
         sleep 1
     done
 
-    unmount_disk "$DISK"
+    unmount_disk "$disk"
 
     # Create new partitions and setup for an MBR install
-    parted --script $DISK \
+    parted --script $disk \
         mklabel msdos \
         mkpart primary ext2 0% 1GiB \
         set 1 boot on \
@@ -104,10 +104,10 @@ install() {
     fi
 
     # Make local names for disk partitions
-    local boot_dev=${DISK}1
-    local swap_dev=${DISK}2
-    local root_dev=${DISK}3
-    local home_dev=${DISK}4
+    local boot_dev=${disk}1
+    local swap_dev=${disk}2
+    local root_dev=${disk}3
+    local home_dev=${disk}4
 
     # Create the filesystems
     mkfs.ext4 -F "$boot_dev"
@@ -320,10 +320,10 @@ main() {
     done
 
     # Cleanup and remove installation files
-    rm stage3-*.tar*
-    rm /root/packages.txt
-    rm /root/genfstab
-    rm /root/gentoo-deploy.sh
+    rm "${ROOT}/stage3-*.tar*"
+    rm "${ROOT}/root/packages.txt"
+    rm "${ROOT}/root/genfstab"
+    rm "${ROOT}/root/gentoo-deploy.sh"
 
     shutdown -r now
 }
