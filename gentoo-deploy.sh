@@ -281,7 +281,7 @@ chroot_install() {
 
     # disk variable is passed as $1 before chroot
     local disk="$1"
-    
+
     # Install the bootloader
     emerge --ask=n --autounmask-continue -q sys-boot/grub:2
     grub-install "$disk"
