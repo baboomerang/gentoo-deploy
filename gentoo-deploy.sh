@@ -321,7 +321,7 @@ main() {
         sleep 1
     done
 
-    reboot
+    shutdown -r now
 }
 
 main "$@"
