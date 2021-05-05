@@ -287,10 +287,6 @@ chroot_install() {
     emerge --ask=n --autounmask-continue -q sys-boot/grub:2
     grub-install "$disk"
     grub-mkconfig -o /boot/grub/grub.cfg
-
-    rm stage3-*.tar*
-    rm /root/packages.txt
-    rm /root/genfstab
 }
 
 main() {
@@ -322,6 +318,12 @@ main() {
         printf "Machine will reboot in %2d seconds...\r" ${seconds}
         sleep 1
     done
+
+    # Cleanup and remove installation files
+    rm stage3-*.tar*
+    rm /root/packages.txt
+    rm /root/genfstab
+    rm /root/gentoo-deploy.sh
 
     shutdown -r now
 }
