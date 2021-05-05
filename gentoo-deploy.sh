@@ -24,7 +24,7 @@ STAGE3="stage3-$ARCH-$FOLDER.tar.xz"
 
 FSTAB="/etc/fstab"
 MAKECONF="/etc/portage/make.conf"
-PACKAGELICENSE="/etc/portage/package.license/kernel"
+PACKAGELICENSE="/etc/portage/package.license"
 PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
@@ -196,6 +196,7 @@ install() {
     # Copy itself into the chroot directory before chrooting
     cp -L -u "$SCRIPT" ./root/gentoo-deploy.sh
     cp -L -u "$GENFSTAB" ./root/genfstab
+    chmod +x ./root/genfstab
     # Copy package list to chroot directory before chrooting
     cp -L "$PACKAGE_LIST" ./root/packages.txt
 
@@ -262,7 +263,7 @@ chroot_install() {
     $(/root/genfstab -U / >> "$FSTAB")
 
     # Install firmware for special hardware
-    echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> "$PACKAGELICENSE"
+    echo "sys-kernel/linux-firmware linux-fw-redistributable no-source-code" >> "$PACKAGELICENSE"
     emerge --ask=n --autounmask-continue sys-kernel/linux-firmware
 
     # Install Kernel Sources
@@ -285,6 +286,7 @@ chroot_install() {
     # Install the bootloader
     emerge --ask=n --autounmask-continue -q sys-boot/grub:2
     grub-install "$disk"
+    grub-mkconfig -o /boot/grub/grub.cfg
 
     rm stage3-*.tar*
     rm /root/packages.txt
