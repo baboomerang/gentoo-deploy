@@ -13,7 +13,6 @@ GENFSTAB=`realpath glacion-genfstab/genfstab`
 ROOT_DIR="/mnt/gentoo"
 BOOT_DIR="${ROOT_DIR}/boot"
 HOME_DIR="${ROOT_DIR}/home"
-DISK="/dev/sdX"
 
 TFTP="192.168.0.3"
 MIRROR="https://bouncer.gentoo.org/fetch/root/all/"
@@ -74,10 +73,10 @@ install() {
     # Show all disks for the user
     lsblk
 
-    DISK="/dev/sdX"
+    local disk
 
     # Prompt user for input and save the input
-    read -rp "Which disk should be erased? (i.e. /dev/sdj): " DISK
+    read -rp "Which disk should be erased? (i.e. /dev/sdj): " disk
     echo "WARNING! BLOCK DEVICE: $DISK WILL BE ERASED IN 60 SECONDS..."
     echo "PLEASE MAKE SURE THIS IS THE CORRECT DISK"
 
@@ -207,7 +206,7 @@ install() {
 
     echo "Chrooting..." >&2
     source /etc/profile
-    chroot ./ /bin/bash -c "/root/gentoo-deploy.sh chroot"
+    chroot ./ /bin/bash -c "/root/gentoo-deploy.sh chroot ${disk}"
 }
 
 chroot_install() {
@@ -280,9 +279,12 @@ chroot_install() {
     rc-update add NetworkManager default
     rc-update add sysklogd default
 
+    # disk variable is passed as $1 before chroot
+    local disk="$1"
+    
     # Install the bootloader
     emerge --ask=n --autounmask-continue -q sys-boot/grub:2
-    grub-install "$DISK"
+    grub-install "$disk"
 
     rm stage3-*.tar*
     rm /root/packages.txt
@@ -304,7 +306,7 @@ main() {
     if [ "$1" = "install" ]; then
         install || exit
     elif [ "$1" = "chroot" ]; then
-        chroot_install || exit
+        chroot_install "$2" || exit
     else
         echo "Could not understand $1"
         echo "To start installation, please run $SCRIPT install"
