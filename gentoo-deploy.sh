@@ -29,14 +29,14 @@ PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
 MAKEOPTS="-j$(expr `nproc` + 1)"
-MAKEUSE='-bindist -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde \
+MAKEUSE='-bindist -systemd -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde \
         elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis \
         x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash \
-        bash-completion i3 vim vim-syntax git dbus qt4 cairo gtk unicode fontconfig \
+        bash-completion i3 vim vim-syntax git dbus qt5 cairo gtk unicode fontconfig \
         truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd \
         logrotate'
 MAKEPYTHON='python3_8'
-MAKEINPUTDEVICES='evdev'
+MAKEINPUTDEVICES='synaptics evdev'
 MAKEVIDEOCARDS='intel i965'
 MAKELINGUAS='en_US en'
 
@@ -81,7 +81,7 @@ install() {
     echo "PLEASE MAKE SURE THIS IS THE CORRECT DISK"
 
     # Print countdown and wait 60 seconds before erasing disk
-    for seconds in {5..1}; do
+    for seconds in {60..1}; do
         printf "PRESS CTRL+C TO CANCEL (%2d seconds)\r" ${seconds}
         sleep 1
     done
@@ -262,6 +262,12 @@ chroot_install() {
     # Create fstab
     $(/root/genfstab -U / >> "$FSTAB")
 
+    #######################################################
+    #  Setup the Gentoo Kernel and install packages
+    #      unmask and install required firmware blobs
+    #      emerge and configure the gentoo kernel
+    #      emerge optional packages from packages.txt
+
     # Install firmware for special hardware
     echo "sys-kernel/linux-firmware linux-fw-redistributable no-source-code" >> "$PACKAGELICENSE"
     emerge --ask=n --autounmask-continue sys-kernel/linux-firmware
@@ -284,7 +290,7 @@ chroot_install() {
     local disk="$1"
 
     # Install the bootloader
-    emerge --ask=n --autounmask-continue -q sys-boot/grub:2
+    emerge --ask=n --autounmask-continue sys-boot/grub:2
     grub-install "$disk"
     grub-mkconfig -o /boot/grub/grub.cfg
 }
