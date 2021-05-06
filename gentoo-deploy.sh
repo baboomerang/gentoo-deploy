@@ -280,7 +280,7 @@ chroot_install() {
     # Install a few helpful packages and services
     local packages
     packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
-    emerge --ask=n --autounmask-continue $packages
+    emerge --ask=n --autounmask-continue --keep-going $packages
 
     # Enable some services to the default runlevel
     rc-update add NetworkManager default
