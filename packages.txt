@@ -26,12 +26,18 @@ app-portage/gentoolkit
 app-portage/portage-utils
 
 #misc
-sys-apps/mlocate
 app-editors/neovim
 app-editors/vim
+app-text/zathura
+app-text/mupdf
+media-video/mplayer
+sys-apps/mlocate
 sys-process/htop
-media-sound/alsa-utils
 www-client/firefox-bin
+
+#sound
+media-sound/mpd
+media-sound/alsa-utils
 
 #networking
 net-misc/networkmanager
