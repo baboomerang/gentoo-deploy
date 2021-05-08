@@ -7,9 +7,9 @@
 #
 ################################
 
-SCRIPT=`realpath $0`
-PACKAGE_LIST=`realpath packages.txt`
-GENFSTAB=`realpath glacion-genfstab/genfstab`
+SCRIPT=$(realpath "$0")
+PACKAGE_LIST=$(realpath packages.txt)
+GENFSTAB=$(realpath glacion-genfstab/genfstab)
 ROOT_DIR="/mnt/gentoo"
 BOOT_DIR="${ROOT_DIR}/boot"
 HOME_DIR="${ROOT_DIR}/home"
@@ -17,8 +17,7 @@ HOME_DIR="${ROOT_DIR}/home"
 TFTP="192.168.0.3"
 MIRROR="https://bouncer.gentoo.org/fetch/root/all/"
 ARCH="amd64"
-PLATFORM="amd64"
-LOCATION="$MIRROR/releases/$ARCH/autobuilds/current-stage3-${ARCH}/"
+LOCATION="$MIRROR/releases/$ARCH/autobuilds/current-stage3-$ARCH/"
 FOLDER="20210321"
 STAGE3="stage3-$ARCH-$FOLDER.tar.xz"
 
@@ -28,7 +27,7 @@ PACKAGELICENSE="/etc/portage/package.license"
 PACKAGEKEYWORDS="/etc/portage/package.keywords"
 
 MAKECFLAGS='-march=native -O3 -pipe'
-MAKEOPTS="-j$(expr `nproc` + 1)"
+MAKEOPTS="-j$(($(nproc) + 1))"
 MAKEUSE='-bindist -systemd -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde \
         elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis \
         x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff opengl bash \
@@ -89,7 +88,7 @@ install() {
     unmount_disk "$disk"
 
     # Create new partitions and setup for an MBR install
-    parted --script $disk \
+    parted --script "$disk" \
         mklabel msdos \
         mkpart primary ext2 0% 1GiB \
         set 1 boot on \
@@ -260,7 +259,7 @@ chroot_install() {
     env-update && source /etc/profile
 
     # Create fstab
-    $(/root/genfstab -U / >> "$FSTAB")
+    /root/genfstab -U / >> "$FSTAB"
 
     #######################################################
     #  Setup the Gentoo Kernel and install packages
@@ -280,7 +279,7 @@ chroot_install() {
     # Install a few helpful packages and services
     local packages
     packages=$(sed -e 's/#.*$//' -e '/^$/d' /root/packages.txt | tr '\n' ' ')
-    emerge --ask=n --autounmask-continue --keep-going $packages
+    emerge --ask=n --autounmask-continue --keep-going "$packages"
 
     # Enable some services to the default runlevel
     rc-update add NetworkManager default
