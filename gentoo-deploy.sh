@@ -35,7 +35,7 @@ MAKEUSE='-bindist -systemd -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bl
         truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd \
         logrotate'
 MAKEPYTHON='python3_8'
-MAKEINPUTDEVICES='synaptics evdev'
+MAKEINPUTDEVICES='evdev synaptics mouse keyboard'
 MAKEVIDEOCARDS='intel i965'
 MAKELINGUAS='en_US en'
 
