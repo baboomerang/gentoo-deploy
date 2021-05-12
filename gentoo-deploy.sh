@@ -29,7 +29,7 @@ PACKAGEKEYWORDS="/etc/portage/package.keywords"
 MAKECFLAGS='-march=native -O3 -pipe'
 MAKEOPTS="-j$(($(nproc) + 1))"
 MAKEUSE='-bindist -systemd -consolekit -webkit -vulkan -vaapi -vdpau -opencl -bluetooth -kde \
-        elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis \
+        -llvm -mdadm elogind udev threads alsa pulseaudio mpeg mp3 flac aac lame midi ogg vorbis \
         x264 xvid win32codecs real png jpeg jpeg2k raw gif svg tiff xml opengl bash \
         bash-completion i3 dbus vim vim-syntax git dbus qt5 cairo gtk unicode fontconfig \
         truetype wifi laptop acpi lm_sensors dvd dvdr cdr cdrom policykit X dhcpcd \
