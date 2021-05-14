@@ -159,7 +159,7 @@ install() {
     if [ ! -f "$STAGE3" ]; then
         echo "Warning! $STAGE3 not in directory, downloading from mirror..."
         wget -l1 -np "${LOCATION}" -P ./ -A index.html -O index.tmp >&2
-        STAGE3=$(grep -m1 -Eo ">stage3-${ARCH}-[0-9]*.*.tar.xz" index.tmp | cut -c 2-)
+        STAGE3=$(grep -m1 -Eo ">stage3-${ARCH}-[0-9]*.*\.tar\.xz" index.tmp | cut -c 2-)
         wget -N "${LOCATION}/${STAGE3}"
     fi
 
