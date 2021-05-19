@@ -252,7 +252,7 @@ chroot_install() {
     echo "America/Chicago" > /etc/timezone
 
     # Set locales
-    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
     locale-gen
 
     # Automatically update package config
