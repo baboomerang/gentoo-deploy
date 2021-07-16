@@ -88,7 +88,7 @@ install() {
     unmount_disk "$disk"
 
     # Create new partitions and setup for an MBR install
-    parted --script "$disk" \
+    parted --script "$disk" --align optimal \
         mklabel msdos \
         mkpart primary ext2 0% 1GiB \
         set 1 boot on \
