@@ -1,11 +1,13 @@
 #!/bin/bash
 
-################################
+########################################
 #
 # Gentoo Deploy Script
-# Usage: ./gentoo-deploy.sh
+# Usage: ./gentoo-deploy.sh install
 #
-################################
+# Creates a simple MBR install of Gentoo
+#
+########################################
 
 SCRIPT=$(realpath "$0")
 PACKAGE_LIST=$(realpath packages.txt)
