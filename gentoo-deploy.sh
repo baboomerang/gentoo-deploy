@@ -327,6 +327,7 @@ main() {
     done
 
     # Cleanup and remove installation files
+    rm "${ROOT}/index.tmp"
     rm "${ROOT}/stage3-*.tar*"
     rm "${ROOT}/root/packages.txt"
     rm "${ROOT}/root/genfstab"
