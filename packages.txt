@@ -28,9 +28,12 @@ app-portage/portage-utils
 #misc
 app-editors/neovim
 app-editors/vim
+app-misc/neofetch
+app-misc/tmux
+app-misc/screen
+app-misc/ranger
 app-text/zathura
 app-text/mupdf
-media-video/mplayer
 sys-apps/mlocate
 sys-process/htop
 www-client/firefox-bin
@@ -38,10 +41,16 @@ www-client/firefox-bin
 #sound
 media-sound/mpd
 media-sound/alsa-utils
+media-sound/ncmpcpp
+
+#video
+media-video/mplayer
+media-video/vlc
 
 #networking
 net-misc/networkmanager
 net-wireless/wpa_supplicant
+net-wireless/wavmon
 
 #fonts
 media-fonts/noto
